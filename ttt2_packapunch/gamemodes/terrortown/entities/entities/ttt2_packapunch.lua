@@ -1,22 +1,22 @@
 if SERVER then
     AddCSLuaFile()
-	util.AddNetworkString("ttt2_update_viewmodel_packapunch")
+	util.AddNetworkString("ttt2_update_client_packapunch")
 end
 
 DEFINE_BASECLASS("ttt_base_placeable")
 
 if CLIENT then
     ENT.Icon = "packapunch"
-    ENT.PrintName = "packapunch machine"
+    ENT.PrintName = "Deployable Pack-A-Punch Machine"
 end
 
 ENT.Base = "ttt_base_placeable"
-ENT.Model = "models/props_c17/tv_monitor01.mdl"
+ENT.Model = "models/codwaw/other/perkmachine_pack-a-punch.mdl"
 
 ENT.CanHavePrints = true
 ENT.NextUse = 0
 
-local myMat = "customtextures/packapunch"
+local myMat = "models/XQM/LightLinesRed_tool"
 
 function ENT:Initialize()
     self:SetModel(self.Model)
@@ -47,46 +47,70 @@ end
 
 if CLIENT then
 	function PAPViewmodel(mat)
+		-- get necessary variables
 		local viewModel = LocalPlayer():GetViewModel()
 		local weapon = LocalPlayer():GetActiveWeapon()
 		local materials = viewModel:GetMaterials()
+		
+		-- for each material in the viewmodel, do something
 		for index, material in ipairs(materials) do
+			-- make sure hands are always drawn normally
 			if material == "models/weapons/v_models/hands/v_hands" then
-				-- make sure hands are always clean
 				viewModel:SetSubMaterial(index - 1, "")
 				continue
 			end
+			-- make sure materials set not to draw... dont draw
+			if Material(material):GetString("$nodraw") == "1" then
+				viewModel:SetSubMaterial(index - 1, "")
+				continue
+			end
+			-- otherwise, overwrite the current material
 			viewModel:SetSubMaterial(index - 1, mat)
 		end
 	end
 	
 	hook.Add("Think", "CheckPAPChange", function()
+		-- get thinking player
 		local ply = LocalPlayer()
-		if not IsValid(ply) then return end -- Ensure the player is valid
+		if not IsValid(ply) then return end
 		
+		-- get his weapon
 		local weapon = ply:GetActiveWeapon()
-		if not IsValid(weapon) then return end -- Ensure the weapon is valid
+		if not IsValid(weapon) then return end
 		
+		-- every frame, update his viewmodel... not the best solution i know
 		if weapon:GetNWBool( "IsPackAPunched" ) then
 			PAPViewmodel(myMat)
 		else
 			PAPViewmodel("")
 		end
     end)
-end
+	
+	net.Receive("ttt2_update_client_packapunch", function()
+		-- get player the message was sent to
+        local ply = LocalPlayer()
+        if not IsValid(ply) then return end
 
--- Hook to apply the tracer effect during bullet firing
-hook.Add("EntityFireBullets", "ApplyCustomPAPTracerEffect", function(ent, data)
-    if ent:IsPlayer() and IsValid(ent:GetActiveWeapon()) then
-        local weapon = ent:GetActiveWeapon()
-		if not weapon:GetNWBool( "IsPackAPunched" ) then return end
-        data.TracerName = "pap_lasertracer"
-    end
-end)
+		-- get his weapon
+        local weapon = ply:GetActiveWeapon()
+        if not IsValid(weapon) then return end
+		
+		-- update the automaticness client side
+		if not weapon.Primary.Automatic then
+			weapon.Primary.Automatic = true
+		end
+		
+		-- update the tracer too for the client
+		weapon.Tracer = "pap_lasertracer"
+    end)
+	
+end
 
 function ENT:PackAPunchWeapon(ply)
 	-- store the weapon that just got packapunched
 	local wepToPack = ply:GetActiveWeapon()
+	
+	if wepToPack:GetNWBool( "IsPackAPunched" ) then return end
 	
 	-- update the networked variable (which updates the viewmodel)
 	wepToPack:SetNWBool( "IsPackAPunched", true )
@@ -100,7 +124,28 @@ function ENT:PackAPunchWeapon(ply)
 	-- update weapon stats
 	wepToPack.Primary.Delay = wepToPack.Primary.Delay * 0.75
 	wepToPack.Primary.Sound = Sound("custom_sounds/pap_shot.wav")
-	wepToPack.Tracer = "pap_lasertracer" -- DOES NOT WORK YET
+	wepToPack.Primary.Automatic = true
+	wepToPack.Tracer = "pap_lasertracer"
+	
+	-- tell client to update some stuff on his end with a net message
+	net.Start("ttt2_update_client_packapunch")
+	net.Send(ply)
+	
+	-- do a cool shake
+	local shake = ents.Create( "env_shake" )
+	shake:SetOwner( ply )
+	shake:SetPos( ply:GetPos() )
+	shake:SetKeyValue( "amplitude", "4" )
+	shake:SetKeyValue( "radius", "80" )
+	shake:SetKeyValue( "duration", "1.5" )
+	shake:SetKeyValue( "frequency", "255" )
+	shake:SetKeyValue( "spawnflags", "4" )
+	shake:Spawn()
+	shake:Activate()
+	shake:Fire( "StartShake", "", 0 )
+	
+	-- play a sound
+	ply:EmitSound("custom_sounds/packapunch.wav")
 	
 	-- leave function
 	return true
@@ -138,8 +183,8 @@ else
         end
     end
 
-    -- handle looking at armor bag
-    hook.Add("TTTRenderEntityInfo", "HUDDrawTargetIDArmorBag", function(tData)
+    -- handle looking at the machine
+    hook.Add("TTTRenderEntityInfo", "HUDDrawTargetIDPackAPunchMachine", function(tData)
         local client = LocalPlayer()
         local ent = tData:GetEntity()
 
@@ -160,8 +205,9 @@ else
         tData:SetOutlineColor(client:GetRoleColor())
 
         tData:SetTitle(TryT(ent.PrintName))
-        tData:SetSubtitle(TryT("press [e]"))
+        tData:SetSubtitle(TryT("Press [E] to upgrade your weapon!"))
 
-        tData:AddDescriptionLine("Use me to packapunch your gun")
+        tData:AddDescriptionLine("Pack-A-Punching your gun increases its strength by a ton!", COLOR_GREEN)
+		tData:AddDescriptionLine("Machine Health: " .. ent:Health())
     end)
 end

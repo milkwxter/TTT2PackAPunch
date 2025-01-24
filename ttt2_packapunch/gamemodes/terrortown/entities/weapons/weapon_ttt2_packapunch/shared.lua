@@ -24,7 +24,7 @@ end
 SWEP.Base = "weapon_tttbase"
 
 SWEP.ViewModel = "models/weapons/v_crowbar.mdl"
-SWEP.WorldModel = "models/props/cs_office/microwave.mdl"
+SWEP.WorldModel = "models/codwaw/other/perkmachine_pack-a-punch.mdl"
 
 SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = -1
@@ -41,7 +41,7 @@ SWEP.WeaponID = AMMO_HEALTHSTATION
 SWEP.AllowDrop = false
 SWEP.NoSights = true
 
-SWEP.drawColor = Color(180, 180, 250, 255)
+SWEP.drawColor = Color(255, 255, 255, 255)
 
 ---
 -- @ignore
@@ -49,11 +49,17 @@ function SWEP:PrimaryAttack()
     self:SetNextPrimaryFire(CurTime() + self.Primary.Delay)
 
     if SERVER then
+		-- create the entity
         local machine = ents.Create("ttt2_packapunch")
-
-        if machine:ThrowEntity(self:GetOwner(), Angle(90, -90, 0)) then
+		local owner = self:GetOwner()
+		local angles = owner:EyeAngles()
+		if machine:ThrowEntity(self:GetOwner(), Angle(90, 0, 0)) then
             self:Remove()
+			machine:EmitSound("custom_sounds/pack_jingle.wav")
         end
+		
+		-- remove weapon
+		self:Remove()
     end
 end
 
