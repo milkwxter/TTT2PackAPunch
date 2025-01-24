@@ -31,5 +31,5 @@ function EFFECT:Render()
 	local a = self.EndPos - self.Dir * math.min( 1 - ( v1 * self.Dist ), self.Dist )
 
 	render.SetMaterial( pew )
-	render.DrawBeam( a, self.EndPos, v2 * 30, 50, self.Dist / 0, Color( 255, 100, 0, v2 * 255 ) )
+	render.DrawBeam( a, self.EndPos, v2 * 30, 50, self.Dist / 0, Color( 255, 0, 0, v2 * 255 ) )
 end

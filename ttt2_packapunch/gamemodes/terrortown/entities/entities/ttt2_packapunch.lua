@@ -16,7 +16,7 @@ ENT.Model = "models/codwaw/other/perkmachine_pack-a-punch.mdl"
 ENT.CanHavePrints = true
 ENT.NextUse = 0
 
-local myMat = "models/XQM/LightLinesRed_tool"
+local myMat = "test/rainbow_ghost"
 
 function ENT:Initialize()
     self:SetModel(self.Model)
@@ -119,10 +119,11 @@ function ENT:PackAPunchWeapon(ply)
 	wepToPack:SetMaterial(myMat)
 	
 	-- tell him he packapunched
-	ply:PrintMessage(HUD_PRINTTALK, "You just used the packapunch")
+	ply:PrintMessage(HUD_PRINTTALK, "[Pack-A-Punch] Your gun now fires faster and deals more damage!")
 	
 	-- update weapon stats
 	wepToPack.Primary.Delay = wepToPack.Primary.Delay * 0.75
+	wepToPack.Primary.Damage = wepToPack.Primary.Damage * 1.1
 	wepToPack.Primary.Sound = Sound("custom_sounds/pap_shot.wav")
 	wepToPack.Primary.Automatic = true
 	wepToPack.Tracer = "pap_lasertracer"
@@ -147,6 +148,9 @@ function ENT:PackAPunchWeapon(ply)
 	-- play a sound
 	ply:EmitSound("custom_sounds/packapunch.wav")
 	
+	-- do a fun animation
+	wepToPack:SendWeaponAnim(ACT_VM_DRAW)
+	
 	-- leave function
 	return true
 end
@@ -165,6 +169,17 @@ if SERVER then
         local user = self:PackAPunchWeapon(ply)
 
         self.NextUse = t + 1
+    end
+	
+	-- Function to handle the entity's removal (destruction)
+    function ENT:OnRemove()
+        local explosion = ents.Create("env_explosion")
+        explosion:SetPos(self:GetPos())
+        explosion:SetOwner(self:GetOwner())
+        explosion:Spawn()
+        explosion:SetKeyValue("iMagnitude", "150") -- Set the explosion magnitude
+        explosion:Fire("Explode", "", 0)
+        explosion:EmitSound("weapon_AWP.Single", 400, 400) -- Optional: Play a sound
     end
 else
     local TryT = LANG.TryTranslation
