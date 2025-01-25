@@ -8,17 +8,17 @@ DEFINE_BASECLASS("weapon_tttbase")
 SWEP.HoldType = "normal"
 
 if CLIENT then
-    SWEP.PrintName = "packapunch machine"
+    SWEP.PrintName = "Pack-A-Punch Machine"
     SWEP.Slot = 6
 
     SWEP.ShowDefaultViewModel = false
 
     SWEP.EquipMenuData = {
         type = "item_weapon",
-        desc = "pack a punch your guns",
+        desc = "Deploy this machine to Pack-A-Punch your guns! Be careful though, it will EXPLODE when destroyed!",
     }
 
-    SWEP.Icon = "vgui/ttt/icon_packapunch"
+    SWEP.Icon = "materials/milkwaters_icons/vgui/ttt/icon_packapunch.png"
 end
 
 SWEP.Base = "weapon_tttbase"
@@ -73,7 +73,7 @@ end
 -- @realm shared
 function SWEP:Initialize()
     if CLIENT then
-        self:AddTTT2HUDHelp("drop it with mouse 1")
+        self:AddTTT2HUDHelp("Deploy the machine")
     end
 
     self:SetColor(self.drawColor)
